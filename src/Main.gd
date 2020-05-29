@@ -24,6 +24,7 @@ var sounds: Dictionary = {
 
 func _ready():
 	reposition(2)
+	create_menu()
 	get_tree().get_root().set_transparent_background(true)
 	panel.connect("gui_input", self, "_on_gui_input")
 	popup_menu.connect("id_pressed", self, "_on_menu_item_pressed")
