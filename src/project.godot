@@ -1,0 +1,57 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=4
+
+_global_script_classes=[ {
+"base": "Node",
+"class": "TwitchChat",
+"language": "GDScript",
+"path": "res://addons/twitch/scripts/TwitchChat.gd"
+}, {
+"base": "Object",
+"class": "TwitchUser",
+"language": "GDScript",
+"path": "res://addons/twitch/scripts/TwitchUser.gd"
+} ]
+_global_script_class_icons={
+"TwitchChat": "res://addons/twitch/assets/twitch.png",
+"TwitchUser": ""
+}
+
+[application]
+
+config/name="TwitchAlert"
+run/main_scene="res://Main.tscn"
+boot_splash/image="res://splash.png"
+config/icon="res://icon.png"
+
+[debug]
+
+gdscript/warnings/return_value_discarded=false
+
+[display]
+
+window/size/width=320
+window/size/height=160
+window/size/resizable=false
+window/size/borderless=true
+window/size/always_on_top=true
+window/per_pixel_transparency/allowed=true
+window/per_pixel_transparency/enabled=true
+
+[editor_plugins]
+
+enabled=PoolStringArray( "twitch" )
+
+[rendering]
+
+quality/driver/driver_name="GLES2"
+vram_compression/import_etc=true
+vram_compression/import_etc2=false
+environment/default_environment="res://default_env.tres"

@@ -1,0 +1,61 @@
+[gd_scene load_steps=3 format=2]
+
+[ext_resource path="res://addons/twitch/scripts/TwitchChat.gd" type="Script" id=1]
+[ext_resource path="res://Main.gd" type="Script" id=2]
+
+[node name="Main" type="Node"]
+script = ExtResource( 2 )
+
+[node name="TwitchChat" type="Node" parent="."]
+script = ExtResource( 1 )
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_top = -64.0
+rect_min_size = Vector2( 320, 64 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Panel" type="Panel" parent="PanelContainer"]
+margin_left = 7.0
+margin_top = 7.0
+margin_right = 313.0
+margin_bottom = 57.0
+
+[node name="NameLabel" type="Label" parent="PanelContainer/Panel"]
+anchor_right = 1.0
+margin_top = 4.0
+margin_bottom = 18.0
+rect_min_size = Vector2( 186, 14 )
+custom_colors/font_color = Color( 1, 1, 0, 1 )
+align = 1
+valign = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="TextLabel" type="Label" parent="PanelContainer/Panel"]
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 4.0
+margin_top = -28.0
+margin_right = -4.0
+margin_bottom = -4.0
+rect_min_size = Vector2( 178, 24 )
+autowrap = true
+clip_text = true
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="PopupMenu" type="PopupMenu" parent="."]
+rect_min_size = Vector2( 160, 160 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="SoundPlayer" type="AudioStreamPlayer" parent="."]
