@@ -38,12 +38,10 @@ gdscript/warnings/return_value_discarded=false
 [display]
 
 window/size/width=320
-window/size/height=160
+window/size/height=64
 window/size/resizable=false
 window/size/borderless=true
 window/size/always_on_top=true
-window/per_pixel_transparency/allowed=true
-window/per_pixel_transparency/enabled=true
 
 [editor_plugins]
 

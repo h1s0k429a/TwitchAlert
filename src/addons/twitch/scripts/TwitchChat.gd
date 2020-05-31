@@ -1,15 +1,21 @@
 class_name TwitchChat, "res://addons/twitch/assets/twitch.png"
 extends Node
 
-signal server_response(response)
-signal user_message(user, message)
-signal user_join(user)
-signal user_left(user)
+signal server_response(response)		# handled internally, not for external use
+signal user_message(user, message)		# to receive chat messages in the channel
+signal user_join(user)					# to detect user joining the channel
+signal user_left(user)					# to detect user leaving the channel 
 
 const CONFIG_NAME: String 	= "twitch"
 const SERVER_HOST: String 	= "irc.chat.twitch.tv"
 const SERVER_PORT: int 		= 6667
 const PACKET_SIZE: int 		= 256
+
+# ***** IMPORTANT *****
+# do not reveal your user access token during a livestream or upload to a public repository
+# do not switch on debug setting during livestream or your access token will be displayed in the Output window
+# you can obtain a user access token using twitch password generator at https://twitchapps.com/tmi/
+# you can revoke previous tokens by removing the twitch password generator from https://www.twitch.tv/settings/connections
 
 export var nick_name	: String		# twitch account name for chat bot (in lowercase)
 export var auth_token	: String		# twitch account user access token (obtain from https://twitchapps.com/tmi/)
@@ -17,11 +23,23 @@ export var channel_id	: String		# the channel for chat bot to join to send and r
 export var send_speed	: float	= 1.5	# seconds per message (read https://dev.twitch.tv/docs/irc/guide#command--message-limits))
 export var debug		: bool			# display commands and responses in Godot Output window
 
+# the above settings can be stored in an external configuration file
+# that call the start_with function with the configuration file path
+# the following shows an example of such a configuration file:
+#	[twitch]
+#	nick_name	= "1bitgodot_bot"
+#	auth_token	= "oauth:z4sduqv56lmwhcjexykv7my0tpr2xu"
+#	channel_id	= "1bitgodot"
+#	send_speed	= 1.5
+#	debug		= false
+
 var server		: StreamPeerTCP
 var users		: Dictionary
 var out_queue	: Array
 var connected	: bool
 var send_wait	: bool
+
+# external functions -----------------------------------------------------------
 
 func start() -> void:
 	if (not connected):
@@ -41,16 +59,11 @@ func start_with(configuration_path: String) -> void:
 	var error: int = configuration.load(configuration_path)
 	if (error != OK): push_error("Error loading configuration file '%s'" % configuration_path)
 	else:
-		nick_name	= configuration.get_value(CONFIG_NAME, "nick_name"	, "1bitgodot"								)
-		auth_token	= configuration.get_value(CONFIG_NAME, "auth_token"	, "oauth:z4sduqv56lmwhcjexykv7my0tpr2xu"	)
-		channel_id	= configuration.get_value(CONFIG_NAME, "channel_id"	, "1bitgodot"								)
-		send_speed  = configuration.get_value(CONFIG_NAME, "send_speed" , 1.5										)	
-		# example configuration file format:
-		#	[twitch]
-		#	nick_name  = "1bitgodot_bot"
-		#	auth_token = "oauth:z4sduqv56lmwhcjexykv7my0tpr2xu"
-		#	channel_id = "1bitgodot"
-		#	send_speed = 1.5
+		nick_name	= configuration.get_value(CONFIG_NAME, "nick_name" 	, nick_name )
+		auth_token	= configuration.get_value(CONFIG_NAME, "auth_token"	, auth_token)
+		channel_id	= configuration.get_value(CONFIG_NAME, "channel_id"	, channel_id)
+		send_speed  = configuration.get_value(CONFIG_NAME, "send_speed"	, send_speed)
+		debug		= configuration.get_value(CONFIG_NAME, "debug"		, debug		)
 		start()
 
 func close() -> void:
@@ -63,6 +76,12 @@ func close() -> void:
 		out_queue.clear()
 		server.free()
 
+func copy_user(user: TwitchUser) -> TwitchUser:
+	var copy: TwitchUser = TwitchUser.new()
+	copy.tags = user.tags.duplicate()
+	copy.name = user.name
+	return copy
+
 func send_command(command: String) -> void:
 	if (debug): print("command> ", command)
 	out_queue.append(command + "\r\n")
@@ -70,31 +89,43 @@ func send_command(command: String) -> void:
 func send_message(message: String) -> void:
 	send_command("PRIVMSG #" + channel_id + " :" + message)
 
+# internal functions -----------------------------------------------------------
+
+func _process_inp() -> void:
+	var length: int = server.get_available_bytes()
+	if (length > 0): emit_signal("server_response",
+		server.get_utf8_string(length))
+
+func _process_out() -> void:
+	if (not send_wait and out_queue.size() > 0):
+		send_wait = true
+		var error  : int = OK
+		var command: String = out_queue[0]
+		var cmd_len: int = command.length()
+		var packets: int = cmd_len / PACKET_SIZE
+		var remains: int = cmd_len % PACKET_SIZE
+		var timeout: SceneTreeTimer = get_tree().create_timer(send_speed)
+		for packet in range(packets): error = server.put_data(command.substr(packet * PACKET_SIZE , PACKET_SIZE).to_utf8())
+		if (error == OK and remains > 0): error = server.put_data(command.substr(packets * PACKET_SIZE, remains).to_utf8())
+		yield(timeout, "timeout")
+		if (error != OK): close()
+		out_queue.remove(0)
+		send_wait = false
+
 func _process(_delta: float) -> void:
 	if (connected):
-		var length: int = server.get_available_bytes()
-		if (length > 0): emit_signal("server_response", server.get_utf8_string(length))
-		if (not send_wait and out_queue.size() > 0):
-			send_wait = true
-			var command: String = out_queue[0]
-			var packets: int = command.length() / PACKET_SIZE
-			var remains: int = command.length() % PACKET_SIZE
-			var timeout: SceneTreeTimer = get_tree().create_timer(send_speed)
-			for packet in range(packets): var _error = server.put_data(command.substr(packet * PACKET_SIZE, PACKET_SIZE).to_utf8())
-			if (remains > 0): var _error = server.put_data(command.substr(packets * PACKET_SIZE, remains).to_utf8())
-			yield(timeout, "timeout")
-			out_queue.remove(0)
-			send_wait = false
-
+		_process_inp()
+		_process_out()
+		
 func _handle_p_message_response(prefix: String, tags: Dictionary, message: String) -> void:
 	if (not users.has(prefix)): _handle_join_response(prefix)
 	var user: TwitchUser = users[prefix]
-	if (tags.size() != 0): user.add_tags(tags)
+	if (tags.size() != 0): user.set_tags(tags)
 	emit_signal("user_message", user, message)
 
 func _handle_userstate_response(prefix: String, tags: Dictionary) -> void:
 	if (not users.has(prefix)): _handle_join_response(prefix)
-	if (tags.size() != 0): users[prefix].add_tags(tags)
+	if (tags.size() != 0): users[prefix].set_tags(tags)
 
 func _handle_join_response(prefix: String) -> void:
 	if (not users.has(prefix)):
