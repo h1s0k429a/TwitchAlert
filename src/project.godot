@@ -28,7 +28,7 @@ _global_script_class_icons={
 
 config/name="TwitchAlert"
 run/main_scene="res://Main.tscn"
-boot_splash/image="res://splash.png"
+boot_splash/image="res://images/splash.png"
 config/icon="res://icon.png"
 
 [debug]
