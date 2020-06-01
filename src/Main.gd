@@ -1,11 +1,10 @@
 extends Node
 
-onready var panel_container	: PanelContainer = $PanelContainer
 onready var panel			: Panel = $PanelContainer/Panel
-onready var close_button	: TextureButton = $PanelContainer/Panel/CloseButton
+onready var panel_container	: PanelContainer = $PanelContainer
 onready var name_label		: Label = $PanelContainer/Panel/NameLabel
 onready var text_label		: Label = $PanelContainer/Panel/TextLabel
-onready var text_timer		: Timer = $TextTimer
+onready var close_button	: TextureButton = $PanelContainer/Panel/CloseButton
 onready var sound_player	: AudioStreamPlayer = $SoundPlayer
 onready var twitch			: TwitchChat = $TwitchChat
 
@@ -14,16 +13,11 @@ var sounds: Dictionary = {
 	"honk" : load("res://sounds/honk.wav")
 }
 
-var dragging: bool = false
-var drag_position: Vector2
-
 func _ready():
 	panel.connect("gui_input", self, "_on_gui_input")
 	close_button.connect("pressed", self, "_on_close_pressed")
-	text_timer.connect("timeout", self, "_on_text_timer")
 	twitch.connect("user_message", self, "_on_user_message")
 	twitch.start_with("res://twitch.cfg")
-	text_timer.start()
 
 func _on_user_message(user: TwitchUser, message: String) -> void:
 	var sound_name:String = "tone"
@@ -35,19 +29,12 @@ func _on_user_message(user: TwitchUser, message: String) -> void:
 	if (sounds.has(sound_name)):
 		sound_player.stream = sounds[sound_name]
 		sound_player.play()
-	text_timer.stop()
 	name_label.self_modulate = user.get_color()
 	name_label.text = user.get_display_name()
 	text_label.text = message
-	text_label.lines_skipped = 0
-	if (text_label.get_line_count() >
-		text_label.get_visible_line_count()):
-		text_timer.start()
 
-func _on_text_timer() -> void:
-	var lines: int = text_label.lines_skipped + 1
-	if (lines == text_label.get_line_count()): lines = 0
-	text_label.lines_skipped = lines
+var dragging: bool = false
+var drag_position: Vector2
 
 func _on_gui_input(input: InputEvent) -> void:
 	if (input is InputEventMouseButton and
