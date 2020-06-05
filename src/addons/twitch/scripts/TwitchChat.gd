@@ -35,6 +35,7 @@ export var debug		: bool			# display commands and responses in Godot Output wind
 
 var server		: StreamPeerTCP
 var users		: Dictionary
+var old_users	: Array
 var out_queue	: Array
 var connected	: bool
 var send_wait	: bool
@@ -129,7 +130,11 @@ func _handle_userstate_response(prefix: String, tags: Dictionary) -> void:
 
 func _handle_join_response(prefix: String) -> void:
 	if (not users.has(prefix)):
-		var user: TwitchUser = TwitchUser.new()
+		var user: TwitchUser
+		if (old_users.size() != 0):
+			user = old_users[0]
+			old_users.remove(0)
+		else: user = TwitchUser.new()
 		user.name = prefix.substr(0, prefix.find("!"))
 		emit_signal("user_join", user)
 		users[prefix] = user
@@ -139,7 +144,7 @@ func _handle_part_response(prefix: String) -> void:
 		var user: TwitchUser = users[prefix]
 		var _error = users.erase(prefix)
 		emit_signal("user_left", user)
-		user.free()
+		old_users.append(user)
 
 func _handle_ping_response(message: String) -> void:
 	send_command("PONG :" + message)
