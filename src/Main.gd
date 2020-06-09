@@ -10,7 +10,7 @@ onready var sound_player	: AudioStreamPlayer = $SoundPlayer
 onready var twitch			: TwitchChat = $TwitchChat
 
 var sounds: Dictionary = {
-	"tone" : load("res://sounds/tone.wav"),
+	"beep" : load("res://sounds/tone.wav"),
 	"honk" : load("res://sounds/honk.wav")
 }
 
@@ -26,23 +26,33 @@ func _ready():
 	text_timer.start()
 
 func _on_user_message(user: TwitchUser, message: String) -> void:
-	var sound_name:String = "tone"
+	var play_id:String = "beep"
 	if (message[0] == "!"):
 		var position: int = message.find(" ")
 		if (position < 0): position = message.length()
-		sound_name = message.substr(1, position - 1).to_lower()
-		message = message.substr(position + 1)
-	if (sounds.has(sound_name)):
-		sound_player.stream = sounds[sound_name]
-		sound_player.play()
+		var command: String = message.substr(1, position - 1).to_lower()
+		message = message.substr(position + 1).strip_edges( true, false)
+		var method: String = "_on_command_" + command
+		if (not has_method(method)):play_id = command
+		else: message = call(method, user, message)
+	if (message.length() != 0):
+		if (sounds.has(play_id)):
+			sound_player.stream = sounds[play_id]
+			sound_player.play()
+			text_timer.stop()
+		name_label.self_modulate = user.get_color()
+		name_label.text = user.get_display_name()
+		text_label.text = message
+		text_label.lines_skipped = 0
+		if (text_label.get_line_count() >
+			text_label.get_visible_line_count()):
+			text_timer.start()
+
+func _on_command_reset(user: TwitchUser, message: String) -> String:
+	name_label.text = ""
+	text_label.text = ""
 	text_timer.stop()
-	name_label.self_modulate = user.get_color()
-	name_label.text = user.get_display_name()
-	text_label.text = message
-	text_label.lines_skipped = 0
-	if (text_label.get_line_count() >
-		text_label.get_visible_line_count()):
-		text_timer.start()
+	return ""
 
 func _on_text_timer() -> void:
 	var lines: int = text_label.lines_skipped + 1
