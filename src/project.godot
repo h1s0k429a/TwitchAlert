@@ -14,7 +14,7 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://addons/twitch/scripts/TwitchChat.gd"
 }, {
-"base": "Object",
+"base": "Reference",
 "class": "TwitchUser",
 "language": "GDScript",
 "path": "res://addons/twitch/scripts/TwitchUser.gd"

@@ -1,3 +1,34 @@
+"""
+*************************************************************************
+*  TwitchChat.gd                                                        *
+*************************************************************************
+*                       This file is part of:                           *
+*                    TwitchChat Godot Plugin 1.3                        *
+*                https://github/1bitgodot/TwitchChat                    *
+*************************************************************************
+* Copyright (c) 2020 Phillip Madden                                     *
+*                                                                       *
+* Permission is hereby granted, free of charge, to any person obtaining *
+* a copy of this software and associated documentation files (the       *
+* "Software"), to deal in the Software without restriction, including   *
+* without limitation the rights to use, copy, modify, merge, publish,   *
+* distribute, sublicense, and/or sell copies of the Software, and to    *
+* permit persons to whom the Software is furnished to do so, subject to *
+* the following conditions:                                             *
+*                                                                       *
+* The above copyright notice and this permission notice shall be        *
+* included in all copies or substantial portions of the Software.       *
+*                                                                       *
+* THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,       *
+* EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF    *
+* MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.*
+* IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY  *
+* CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,  *
+* TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE     *
+* SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.                *
+*************************************************************************
+"""
+
 class_name TwitchChat, "res://addons/twitch/assets/twitch.png"
 extends Node
 
@@ -6,10 +37,10 @@ signal user_message(user, message)		# to receive chat messages in the channel
 signal user_join(user)					# to detect user joining the channel
 signal user_left(user)					# to detect user leaving the channel 
 
-const CONFIG_NAME: String 	= "twitch"
-const SERVER_HOST: String 	= "irc.chat.twitch.tv"
-const SERVER_PORT: int 		= 6667
-const PACKET_SIZE: int 		= 256
+const CONFIG_NAME: String 	= "twitch"				# configuration file section name
+const SERVER_HOST: String 	= "irc.chat.twitch.tv"	# twitch IRC chat server hostname
+const SERVER_PORT: int 		= 6667					# twitch IRC char server port
+const PACKET_SIZE: int 		= 256					# 
 
 # ***** IMPORTANT *****
 # do not reveal your user access token during a livestream or upload to a public repository
@@ -35,7 +66,6 @@ export var debug		: bool			# display commands and responses in Godot Output wind
 
 var server		: StreamPeerTCP
 var users		: Dictionary
-var old_users	: Array
 var out_queue	: Array
 var connected	: bool
 var send_wait	: bool
@@ -46,7 +76,7 @@ func start() -> void:
 	if (not connected):
 		server = StreamPeerTCP.new()
 		var error = server.connect_to_host(SERVER_HOST, SERVER_PORT)
-		if (error != OK): push_error("Failed to connect to %s:%d" % [SERVER_HOST, SERVER_PORT])
+		if (error != OK): push_error("Failed to connect to %s:%d." % [SERVER_HOST, SERVER_PORT])
 		else:
 			connected = true
 			error = connect("server_response", self, "_on_server_response")
@@ -58,7 +88,7 @@ func start() -> void:
 func start_with(configuration_path: String) -> void:
 	var configuration = ConfigFile.new()
 	var error: int = configuration.load(configuration_path)
-	if (error != OK): push_error("Error loading configuration file '%s'" % configuration_path)
+	if (error != OK): push_error("Error loading configuration file '%s'." % configuration_path)
 	else:
 		nick_name	= configuration.get_value(CONFIG_NAME, "nick_name" 	, nick_name )
 		auth_token	= configuration.get_value(CONFIG_NAME, "auth_token"	, auth_token)
@@ -130,11 +160,7 @@ func _handle_userstate_response(prefix: String, tags: Dictionary) -> void:
 
 func _handle_join_response(prefix: String) -> void:
 	if (not users.has(prefix)):
-		var user: TwitchUser
-		if (old_users.size() != 0):
-			user = old_users[0]
-			old_users.remove(0)
-		else: user = TwitchUser.new()
+		var user = TwitchUser.new()
 		user.name = prefix.substr(0, prefix.find("!"))
 		emit_signal("user_join", user)
 		users[prefix] = user
@@ -144,7 +170,6 @@ func _handle_part_response(prefix: String) -> void:
 		var user: TwitchUser = users[prefix]
 		var _error = users.erase(prefix)
 		emit_signal("user_left", user)
-		old_users.append(user)
 
 func _handle_ping_response(message: String) -> void:
 	send_command("PONG :" + message)
