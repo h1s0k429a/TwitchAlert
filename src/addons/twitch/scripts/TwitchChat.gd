@@ -40,7 +40,7 @@ signal user_left(user)					# to detect user leaving the channel
 const CONFIG_NAME: String 	= "twitch"				# configuration file section name
 const SERVER_HOST: String 	= "irc.chat.twitch.tv"	# twitch IRC chat server hostname
 const SERVER_PORT: int 		= 6667					# twitch IRC char server port
-const PACKET_SIZE: int 		= 256					# 
+const PACKET_SIZE: int 		= 256					# commands are sent to server in chunks of this size
 
 # ***** IMPORTANT *****
 # do not reveal your user access token during a livestream or upload to a public repository
